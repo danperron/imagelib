@@ -26,6 +26,10 @@ class Image {
         $this->setImageData($data);
     }
 
+    public function __destruct() {
+        \imagedestroy($this->data);
+    }
+
     /**
      * get the image height
      * 
@@ -219,10 +223,7 @@ class Image {
      * @return \Image 
      */
     public function desaturate() {
-        $newData = \imagecreatetruecolor($this->getWidth(), $this->getHeight());
-        \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
-        \imagefilter($newData, IMG_FILTER_GRAYSCALE);
-        return new Image($newData);
+        return $this->filter(IMG_FILTER_GRAYSCALE);
     }
 
     /**
@@ -233,21 +234,7 @@ class Image {
      * @throws ImageException 
      */
     public function emboss() {
-        $newData = \imagecreatetruecolor($this->getWidth(), $this->getHeight());
-
-        $copyed = \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
-
-        if (!$copyed) {
-            throw new ImageException('Unable to emboss', ImageException::ERR_UNKNOWN);
-        }
-
-        $filtered = \imagefilter($newData, IMG_FILTER_EMBOSS);
-
-        if (!$filtered) {
-            throw new ImageException('Unable to emboss', ImageException::ERR_UNKNOWN);
-        }
-
-        return new Image($newData);
+        return $this->filter(IMG_FILTER_EMBOSS);
     }
 
     /**
@@ -256,12 +243,7 @@ class Image {
      * @return \Image 
      */
     public function negative() {
-        $newData = \imagecreatetruecolor($this->getWidth(), $this->getHeight());
-
-        \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
-        \imagefilter($newData, IMG_FILTER_NEGATE);
-
-        return new Image($newData);
+        return $this->filter(IMG_FILTER_NEGATE);
     }
 
     /**
@@ -321,6 +303,53 @@ class Image {
     }
 
     /**
+     * mirrors the image
+     * 
+     * @return \danperron\imagelib\Image
+     */
+    public function mirror() {
+        $newData = \imagecreatetruecolor($this->width, $this->height);
+        \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
+        \imageflip($newData, IMG_FLIP_HORIZONTAL);
+        return new Image($newData);
+    }
+
+    /**
+     * 
+     * @param int $red
+     * @param int $green
+     * @param int $blue
+     * @param int $alpha
+     * @return \danperron\imagelib\Image
+     */
+    public function colorize($red, $green, $blue, $alpha) {
+        return $this->filter(IMG_FILTER_COLORIZE, $red, $green, $blue, $alpha);
+    }
+
+    /**
+     * 
+     * @return \danperron\imagelib\Image
+     */
+    public function edgeDetect() {
+        return $this->filter(IMG_FILTER_EDGEDETECT);
+    }
+
+    /**
+     * 
+     * @return type
+     */
+    public function meanRemoval() {
+        return $this->filter(IMG_FILTER_MEAN_REMOVAL);
+    }
+
+    private function filter($filtertype, $arg1 = null, $arg2 = null, $arg3 = null, $arg4 = null) {
+        $newData = @\imagecreatetruecolor($this->width, $this->height) or $this->throwException(new ImageException('Error filtering image'));
+        @\imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight()) or $this->throwException(new ImageException("Error filtering image"));
+        @\imagefilter($newData, $filtertype, $arg1, $arg2, $arg3, $arg4) or $this->throwException(new ImageException('Error filtering image.'));
+        return new Image($newData);
+    }
+
+    /**
      * Save image as a png to the file specified
      * 
      * @param string $fileName
@@ -361,6 +390,10 @@ class Image {
         if (!$saved) {
             throw new ImageException('Could not save GIF', ImageException::ERR_SAVE);
         }
+    }
+
+    private function throwException(\Exception $e) {
+        throw $e;
     }
 
 }

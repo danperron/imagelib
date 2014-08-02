@@ -9,7 +9,8 @@ sample usage - squarifying an image and resizing to 200x200
 ```php
 use danperron\imagelib\Image;
 
-$image = Image::load('testImage.png')->squarify()
+$image = Image::load('testImage.png')
+        ->squarify()
         ->scale(200, 200)
         ->save('testImage_squared.png');
 ```
