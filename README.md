@@ -15,7 +15,7 @@ $image = Image::load('testImage.png')->squarify()
 ```
 
 
-sample usage - resizing image to width of 500 while maintaining aspect ratio
+sample usage - resizing image to width of 150 while maintaining aspect ratio
 
 ```php
 use danperron\imagelib\Image;
