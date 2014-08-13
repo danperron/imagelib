@@ -22,11 +22,18 @@ class Image {
     const TYPE_JPEG = 'jpg';
     const TYPE_GD = 'gd';
 
+    /**
+     * 
+     * @param resource $data
+     */
     private function __construct($data) {
         $this->setImageData($data);
     }
 
-    public function __destruct() {
+    /**
+     * 
+     */
+    function __destruct() {
         \imagedestroy($this->data);
     }
 
@@ -49,6 +56,7 @@ class Image {
     }
 
     /**
+     * Load a file
      * 
      * @param string $filename
      * @return Image
@@ -80,7 +88,7 @@ class Image {
     /**
      * load an image from a PNG file
      * 
-     * @param type $fileName
+     * @param string $fileName
      * @return Image
      * @throws ImageException 
      */
@@ -92,6 +100,13 @@ class Image {
         return new Image($data);
     }
 
+    /**
+     * Load an image from a GD file
+     * 
+     * @param string $fileName
+     * @return \danperron\imagelib\Image
+     * @throws ImageException
+     */
     private static function loadGD($fileName) {
         $data = imagecreatefromgd($filename);
 
@@ -105,7 +120,7 @@ class Image {
     /**
      * Load an image from a JPEG file
      * 
-     * @param type $fileName
+     * @param string $fileName
      * @return \Image
      * @throws ImageException 
      */
@@ -123,7 +138,7 @@ class Image {
     /**
      * load an image from a GIF
      * 
-     * @param type $fileName
+     * @param string $fileName
      * @return \Image
      * @throws ImageException 
      */
@@ -152,8 +167,8 @@ class Image {
      * 
      * @param int $x - starting point x
      * @param int $y - starting point y
-     * @param int $w - width of crop
-     * @param int $h - height of crop
+     * @param int $w - width of cropped image
+     * @param int $h - height of cropped image
      * @return \Image
      * @throws ImageException 
      */
@@ -309,8 +324,17 @@ class Image {
      */
     public function mirror() {
         $newData = \imagecreatetruecolor($this->width, $this->height);
-        \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
-        \imageflip($newData, IMG_FLIP_HORIZONTAL);
+        if ($newData === FALSE) {
+            throw new ImageException("Unable to flip image.");
+        }
+        $success = \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
+        if ($success === FALSE) {
+            throw new ImageException("Unable to flip image.");
+        }
+        $success = \imageflip($newData, IMG_FLIP_HORIZONTAL);
+        if ($success === FALSE) {
+            throw new ImageException("Unable to flip image.");
+        }
         return new Image($newData);
     }
 
@@ -342,10 +366,43 @@ class Image {
         return $this->filter(IMG_FILTER_MEAN_REMOVAL);
     }
 
+    /**
+     * Send image to output buffer and write content headers.
+     */
+    public function render($type = Image::TYPE_PNG) {
+        switch ($type) {
+            case Image::TYPE_PNG:
+                header('Content-Type: image/png');
+                imagepng($this->data);
+                break;
+            case Image::TYPE_JPEG:
+                header('Content-Type: image/jpeg');
+                imagejpeg($this->data);
+                break;
+            case Image::TYPE_GIF:
+                header('Content-Type: image/gif');
+                imagegif($this->data);
+                break;
+            default:
+                throw new ImageException("Unsupported type $type", ImageException::ERR_UNKNOWN);
+        }
+    }
+
     private function filter($filtertype, $arg1 = null, $arg2 = null, $arg3 = null, $arg4 = null) {
-        $newData = @\imagecreatetruecolor($this->width, $this->height) or $this->throwException(new ImageException('Error filtering image'));
-        @\imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight()) or $this->throwException(new ImageException("Error filtering image"));
-        @\imagefilter($newData, $filtertype, $arg1, $arg2, $arg3, $arg4) or $this->throwException(new ImageException('Error filtering image.'));
+        $newData = \imagecreatetruecolor($this->width, $this->height) or $this->throwException();
+        if ($newData === FALSE) {
+            throw new ImageException('Error filtering image');
+        }
+
+        $success = \imagecopy($newData, $this->data, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
+        if ($success === FALSE) {
+            throw new ImageException('Error filtering image');
+        }
+
+        $success = \imagefilter($newData, $filtertype, $arg1, $arg2, $arg3, $arg4);
+        if ($success === FALSE) {
+            throw new ImageException('Error filtering image');
+        }
         return new Image($newData);
     }
 
@@ -392,7 +449,12 @@ class Image {
         }
     }
 
-    private function throwException(\Exception $e) {
+    /**
+     * 
+     * @param \Exception $e
+     * @throws \Exception
+     */
+    private static function throwException(\Exception $e) {
         throw $e;
     }
 

@@ -1,10 +1,11 @@
 {
     "name": "danperron/imagelib",
-    "description": "A simple image library that wraps PHP-GD",
+    "description": "A simple image manipulation library",
     "authors": [
         {
             "name": "Dan Perron",
-            "email": "danp3rr0n@gmail.com"
+            "email": "danp3rr0n@gmail.com",
+            "website":"http://danperron.com"
         }
     ],
     "minimum-stability": "dev",
